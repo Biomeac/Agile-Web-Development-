@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template
-from flask_login import current_user, login_required
+from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask_login import current_user, login_required, login_user, logout_user
 from app.models import User
 from app import db
 
@@ -9,6 +9,33 @@ main = Blueprint("main", __name__)
 @main.route("/")
 def index():
     return render_template("index.html")
+
+
+@main.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        # Check if username already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            flash('Username already taken. Please choose another.')
+            return redirect(url_for('main.register'))
+
+        user = User(username=username)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        flash('Account created! Please log in.')
+        return redirect(url_for('main.login'))
+    
+    return render_template('register.html')
+
 
 @main.route('/login', methods=['GET', 'POST'])
 def login():
@@ -28,12 +55,19 @@ def login():
             
     return render_template('login.html')
 
-@main.route('/analytics')
 
+@main.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('main.login'))
+
+
+@main.route('/analytics')
+@login_required
 def analytics():
     totalcards = sum(len(s_set.flashcards) for s_set in current_user.study_sets)
 
-    #data for the visuals 
     stats = {
         'cards': totalcards, 
         'accuracy': 90,
