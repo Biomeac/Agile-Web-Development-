@@ -23,6 +23,9 @@ def create_app(config_class=Config):
     csrf.init_app(app)
     login_manager.init_app(app)
 
+    with app.app_context():
+        db.create_all()
+
     from app import models
     from app.routes import main
     app.register_blueprint(main)
@@ -30,6 +33,6 @@ def create_app(config_class=Config):
     @app.cli.command("init-db")
     def init_db():
         db.create_all()
-        print("Initialized the database.")
+        print("Initialised the database.")
 
     return app
