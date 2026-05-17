@@ -253,26 +253,87 @@ def study_sets():
         .order_by(StudySet.id.desc())
         .all()
     )
-    total_cards = sum(len(study_set.flashcards) for study_set in user_study_sets)
+    total_cards = sum(len(s.flashcards) for s in user_study_sets)
+    public_count = sum(1 for s in user_study_sets if s.is_public)
     return render_template(
-        "profile.html",
+        "my_study_sets.html",
         study_sets=user_study_sets,
         total_cards=total_cards,
-        streak=current_user.streak,        
-        achievements=current_user.achievements,  
+        total_sets=len(user_study_sets),
+        public_count=public_count,
     )
+
+
+# Achievement catalogue — keep in sync with User.update_achievements()
+ACHIEVEMENTS = [
+    ("first-set",     "First steps",     "Created your first study set",     "fa-shoe-prints"),
+    ("five-sets",     "Collector",       "Built 5 study sets",               "fa-layer-group"),
+    ("week-streak",   "Streak keeper",   "7 days in a row",                  "fa-fire"),
+    ("ten-sets",      "Curator",         "Built 10 study sets",              "fa-medal"),
+]
+
+
+def _achievement_state(user, sets_count):
+    """Return list of dicts: {slug, title, blurb, icon, unlocked} in order."""
+    unlocked_set = set()
+    if sets_count >= 1:  unlocked_set.add("first-set")
+    if sets_count >= 5:  unlocked_set.add("five-sets")
+    if sets_count >= 10: unlocked_set.add("ten-sets")
+    if user.streak and user.streak >= 7: unlocked_set.add("week-streak")
+    return [
+        {"slug": s, "title": t, "blurb": b, "icon": ic, "unlocked": s in unlocked_set}
+        for (s, t, b, ic) in ACHIEVEMENTS
+    ]
+
+
+def _sanitize_avatar_emoji(raw):
+    """Accept short non-ascii strings only. Reject typed text."""
+    if not raw:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    # If it contains any letters/digits/whitespace, it's not an emoji.
+    if any(ch.isascii() and (ch.isalnum() or ch.isspace()) for ch in s):
+        return None
+    return s[:8]
+
+
+@main.route("/profile/avatar", methods=["POST"])
+@login_required
+def update_avatar():
+    current_user.avatar_emoji = _sanitize_avatar_emoji(request.form.get("avatar_emoji"))
+    db.session.commit()
+    flash("Avatar updated." if current_user.avatar_emoji else "Avatar cleared.")
+    return redirect(url_for("main.profile"))
 
 
 @main.route("/profile")
 @login_required
 def profile():
+    sets_count = len(current_user.study_sets)
     total_cards = sum(len(s.flashcards) for s in current_user.study_sets)
+
+    sessions = (
+        StudySession.query
+        .filter_by(user_id=current_user.id)
+        .order_by(StudySession.finished_at.desc())
+        .all()
+    )
+    sessions_count = len(sessions)
+    recent_sessions = sessions[:5]
+    best_accuracy = max((s.accuracy for s in sessions), default=0.0)
+    favorites_count = Favorite.query.filter_by(user_id=current_user.id).count()
+
     return render_template(
         "profile.html",
         total_cards=total_cards,
-        streak=current_user.streak,
-        achievements=current_user.achievements,
-        study_sets=current_user.study_sets,
+        sets_count=sets_count,
+        sessions_count=sessions_count,
+        best_accuracy=int(round(best_accuracy * 100)),
+        favorites_count=favorites_count,
+        achievements_state=_achievement_state(current_user, sets_count),
+        recent_sessions=recent_sessions,
     )
 
 
