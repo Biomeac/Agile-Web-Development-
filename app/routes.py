@@ -19,6 +19,21 @@ def get_owned_study_set_or_404(study_set_id):
     return study_set
 
 
+def get_playable_study_set_or_404(study_set_id):
+    """Return the set if the current user can play it (owns it or it's public)."""
+    study_set = StudySet.query.get_or_404(study_set_id)
+    if study_set.user_id != current_user.id and not study_set.is_public:
+        abort(404)
+    return study_set
+
+
+def back_url_for_set(study_set):
+    """Where the play screens' '← back' link should go for this user/set."""
+    if study_set.user_id == current_user.id:
+        return url_for("main.study_set_detail", study_set_id=study_set.id)
+    return url_for("main.browse_public_study_set", study_set_id=study_set.id)
+
+
 @main.route("/")
 def index():
     recent_public_sets = (
@@ -317,8 +332,12 @@ def browse_public_study_set(study_set_id):
 @main.route("/study-sets/<int:study_set_id>/study")
 @login_required
 def study_set_study(study_set_id):
-    study_set = get_owned_study_set_or_404(study_set_id)
-    return render_template("study_mode.html", study_set=study_set)
+    study_set = get_playable_study_set_or_404(study_set_id)
+    return render_template(
+        "study_mode.html",
+        study_set=study_set,
+        back_url=back_url_for_set(study_set),
+    )
 
 
 @main.route("/analytics")
@@ -383,21 +402,23 @@ MODE_CONFIG = {
 @main.route("/study-sets/<int:study_set_id>/quiz")
 @login_required
 def study_set_quiz(study_set_id):
-    study_set = get_owned_study_set_or_404(study_set_id)
+    study_set = get_playable_study_set_or_404(study_set_id)
+    back_url = back_url_for_set(study_set)
     if not study_set.flashcards:
-        flash("Add at least one flashcard before starting a quiz.")
-        return redirect(url_for("main.study_set_detail", study_set_id=study_set.id))
-    return render_template("quiz_mode.html", study_set=study_set)
+        flash("This set has no flashcards yet.")
+        return redirect(back_url)
+    return render_template("quiz_mode.html", study_set=study_set, back_url=back_url)
 
 
 @main.route("/study-sets/<int:study_set_id>/time")
 @login_required
 def study_set_time(study_set_id):
-    study_set = get_owned_study_set_or_404(study_set_id)
+    study_set = get_playable_study_set_or_404(study_set_id)
+    back_url = back_url_for_set(study_set)
     if len(study_set.flashcards) < 2:
-        flash("Add at least two flashcards before starting Time Game.")
-        return redirect(url_for("main.study_set_detail", study_set_id=study_set.id))
-    return render_template("time_mode.html", study_set=study_set)
+        flash("Time Game needs at least two flashcards.")
+        return redirect(back_url)
+    return render_template("time_mode.html", study_set=study_set, back_url=back_url)
 
 
 def _record_session(study_set, mode, score, total):
@@ -425,7 +446,7 @@ def _parse_int(payload, key):
 @main.route("/study-sets/<int:study_set_id>/quiz/submit", methods=["POST"])
 @login_required
 def submit_quiz_session(study_set_id):
-    study_set = get_owned_study_set_or_404(study_set_id)
+    study_set = get_playable_study_set_or_404(study_set_id)
     payload = request.get_json(silent=True) or {}
 
     score = _parse_int(payload, "score")
@@ -444,7 +465,7 @@ def submit_quiz_session(study_set_id):
 @main.route("/study-sets/<int:study_set_id>/time/submit", methods=["POST"])
 @login_required
 def submit_time_session(study_set_id):
-    study_set = get_owned_study_set_or_404(study_set_id)
+    study_set = get_playable_study_set_or_404(study_set_id)
     payload = request.get_json(silent=True) or {}
 
     right = _parse_int(payload, "right")

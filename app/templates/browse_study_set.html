@@ -19,6 +19,22 @@
     </div>
 </section>
 
+{% if study_set.flashcards %}
+    <section class="actions-row" style="margin-bottom:1.4rem;">
+        <a href="{{ url_for('main.study_set_study', study_set_id=study_set.id) }}" class="button">
+            <i class="fa-solid fa-play"></i> Flip
+        </a>
+        <a href="{{ url_for('main.study_set_quiz', study_set_id=study_set.id) }}" class="button button-quiz">
+            <i class="fa-regular fa-circle-question"></i> Quiz
+        </a>
+        {% if study_set.flashcards|length >= 2 %}
+            <a href="{{ url_for('main.study_set_time', study_set_id=study_set.id) }}" class="button button-time">
+                <i class="fa-regular fa-clock"></i> Time
+            </a>
+        {% endif %}
+    </section>
+{% endif %}
+
 <section class="study-set-container">
     <div class="section-heading">
         <h2>Flashcards</h2>

@@ -5,7 +5,7 @@
 {% block content %}
 <section class="profile">
     <div class="profile-info">
-        <a class="back-link" href="{{ url_for('main.study_set_detail', study_set_id=study_set.id) }}">← back to study set</a>
+        <a class="back-link" href="{{ back_url or url_for('main.study_set_detail', study_set_id=study_set.id) }}">← back to study set</a>
         <h1>{{ study_set.title }}</h1>
         <p>Tap the card to flip. Use the buttons or your arrow keys to move between cards.</p>
     </div>

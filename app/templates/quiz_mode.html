@@ -137,7 +137,7 @@
 
     <section class="profile">
         <div class="profile-info">
-            <a class="back-link" href="{{ url_for('main.study_set_detail', study_set_id=study_set.id) }}">← back to study set</a>
+            <a class="back-link" href="{{ back_url or url_for('main.study_set_detail', study_set_id=study_set.id) }}">← back to study set</a>
             <h1>{{ study_set.title }}</h1>
             <p>Pick the correct definition for each term.</p>
         </div>
@@ -174,7 +174,7 @@
             <button type="button" class="button" id="r-retry">
                 <i class="fa-solid fa-rotate-right"></i> Try again
             </button>
-            <a class="button button-secondary" href="{{ url_for('main.study_set_detail', study_set_id=study_set.id) }}">
+            <a class="button button-secondary" href="{{ back_url or url_for('main.study_set_detail', study_set_id=study_set.id) }}">
                 Back to set
             </a>
         </div>
