@@ -3,7 +3,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import or_
 
 from app import db
-from app.models import Favorite, Flashcard, StudySession, StudySet, User
+from app.models import Favorite, Flashcard, StudySession, StudySet, Tag, User
 
 
 main = Blueprint("main", __name__)
@@ -148,35 +148,98 @@ def settings():
 
     return render_template("setting.html")
 
+DELIMITER_MAP = {
+    "tab":   "\t",
+    "comma": ",",
+    "dash":  "-",
+    "pipe":  "|",
+}
+
+
+def _parse_bulk(text, delimiter_key):
+    """Parse pasted/CSV text into a list of (term, definition) tuples."""
+    delim = DELIMITER_MAP.get(delimiter_key, "\t")
+    pairs = []
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if delim not in line:
+            continue
+        term, _, definition = line.partition(delim)
+        # If the chosen delim was a comma, allow second-comma-and-beyond as part of the definition.
+        # partition() already handles that — only splits on the first occurrence.
+        term = term.strip().strip('"').strip()
+        definition = definition.strip().strip('"').strip()
+        if term and definition:
+            pairs.append((term, definition))
+    return pairs
+
+
 @main.route("/study-sets/new", methods=["GET", "POST"])
 @login_required
 def create_study_set():
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         description = request.form.get("description", "").strip()
-        terms = request.form.getlist("term")
-        definitions = request.form.getlist("definition")
+        mode = request.form.get("input_mode", "form")  # form | paste | upload
 
-        flashcards = [
-            Flashcard(question=term.strip(), answer=definition.strip())
-            for term, definition in zip(terms, definitions)
-            if term.strip() and definition.strip()
-        ]
+        pairs = []
+        if mode == "paste":
+            text = request.form.get("bulk_text", "")
+            pairs = _parse_bulk(text, request.form.get("bulk_delimiter", "tab"))
+        elif mode == "upload":
+            uploaded = request.files.get("bulk_file")
+            if uploaded and uploaded.filename:
+                try:
+                    text = uploaded.read().decode("utf-8", errors="replace")
+                except Exception:
+                    text = ""
+                # Default to comma for .csv, tab for .tsv, else fall back to form field.
+                name = uploaded.filename.lower()
+                guess = "comma" if name.endswith(".csv") else "tab" if name.endswith(".tsv") else None
+                pairs = _parse_bulk(text, guess or request.form.get("bulk_delimiter", "tab"))
+        else:
+            terms = request.form.getlist("term")
+            definitions = request.form.getlist("definition")
+            pairs = [
+                (t.strip(), d.strip())
+                for t, d in zip(terms, definitions)
+                if t.strip() and d.strip()
+            ]
+
+        flashcards = [Flashcard(question=t, answer=d) for t, d in pairs]
 
         if not title or not flashcards:
             flash("Add a title and at least one complete flashcard.")
             return render_template("create_studyset.html"), 400
 
+        # Cover emoji (we trust the picker; trim to 8 chars max).
+        cover_emoji = (request.form.get("cover_emoji") or "").strip()[:8] or None
+
+        # Tags: comma- (or space-) separated, normalized + de-duped.
+        tag_objects = []
+        raw_tags = request.form.get("tags", "")
+        seen = set()
+        for token in raw_tags.replace(",", " ").split():
+            tag = Tag.get_or_create(token)
+            if tag is None or tag.name in seen:
+                continue
+            seen.add(tag.name)
+            tag_objects.append(tag)
+
         study_set = StudySet(
             title=title,
             description=description,
+            cover_emoji=cover_emoji,
             owner=current_user,
             flashcards=flashcards,
+            tags=tag_objects,
         )
         db.session.add(study_set)
         db.session.commit()
 
-        flash("Study set created.")
+        flash(f"Study set created with {len(flashcards)} card{'s' if len(flashcards) != 1 else ''}.")
         return redirect(url_for("main.study_set_detail", study_set_id=study_set.id))
 
     return render_template("create_studyset.html")
