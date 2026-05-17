@@ -92,19 +92,11 @@
             <div class="card-section">
                 <h3>Paste your cards</h3>
                 <p class="hint">
-                    One card per line. Choose how the term and definition are separated.
+                    One card per line. Tab, comma, dash, and pipe separators are detected automatically.
                     Works great with copy-paste from Quizlet, a Google Sheet, or a Word table.
                 </p>
 
-                <div class="delim-row">
-                    <label for="bulk-delimiter">Separator</label>
-                    <select id="bulk-delimiter" name="bulk_delimiter">
-                        <option value="tab">Tab  (copy-paste from a spreadsheet)</option>
-                        <option value="comma">Comma  (CSV-style)</option>
-                        <option value="dash">Dash  (term - definition)</option>
-                        <option value="pipe">Pipe  (term | definition)</option>
-                    </select>
-                </div>
+                <input type="hidden" name="bulk_delimiter" id="bulk-delimiter" value="tab">
 
                 <textarea id="bulk-text" name="bulk_text" rows="9" class="bulk-textarea"
                           placeholder="HTTP&#9;HyperText Transfer Protocol&#10;CORS&#9;Cross-Origin Resource Sharing&#10;DOM&#9;Document Object Model"></textarea>
@@ -120,8 +112,8 @@
             <div class="card-section">
                 <h3>Upload a .csv / .tsv file</h3>
                 <p class="hint">
-                    Two columns: term, definition. We'll detect the separator from the extension
-                    (override below if needed). Headers are skipped automatically.
+                    Two columns: term, definition. Separator is detected from the file type
+                    (.csv, .tsv) or from the content. Headers are skipped automatically.
                 </p>
 
                 <div class="file-drop">
@@ -132,16 +124,6 @@
                     </label>
                 </div>
 
-                <div class="delim-row" style="margin-top:0.6rem;">
-                    <label for="bulk-delimiter-upload" class="hint-handwritten">override separator</label>
-                    <select id="bulk-delimiter-upload">
-                        <option value="">auto-detect</option>
-                        <option value="tab">tab</option>
-                        <option value="comma">comma</option>
-                        <option value="dash">dash</option>
-                        <option value="pipe">pipe</option>
-                    </select>
-                </div>
             </div>
         </div>
 
@@ -373,9 +355,25 @@
         return out;
     }
 
+    function detectDelimiter(text) {
+        const keys = ["tab", "comma", "pipe", "dash"];
+        let best = "tab";
+        let bestCount = 0;
+        for (const key of keys) {
+            const count = parsePairs(text, key).length;
+            if (count > bestCount) {
+                bestCount = count;
+                best = key;
+            }
+        }
+        return best;
+    }
+
     function refreshPreview() {
         if (!bulkText) return;
-        const pairs = parsePairs(bulkText.value, bulkDelim?.value || "tab");
+        const delimKey = detectDelimiter(bulkText.value);
+        if (bulkDelim) bulkDelim.value = delimKey;
+        const pairs = parsePairs(bulkText.value, delimKey);
         previewCount.textContent = `${pairs.length} card${pairs.length === 1 ? "" : "s"} detected`;
         previewList.innerHTML = "";
         pairs.slice(0, 5).forEach(p => {
@@ -393,25 +391,22 @@
         }
     }
     bulkText?.addEventListener("input", refreshPreview);
-    bulkDelim?.addEventListener("change", refreshPreview);
     refreshPreview();
 
-    // ---------- File upload: echo filename + override delim ----------
+    // ---------- File upload: echo filename ----------
     const fileInput = document.querySelector("#bulk-file");
     const fileLabel = document.querySelector("#file-name");
-    const fileDelim = document.querySelector("#bulk-delimiter-upload");
 
     fileInput?.addEventListener("change", () => {
         const f = fileInput.files?.[0];
         fileLabel.textContent = f ? f.name : "Choose a file…";
     });
-    // If user picks an override delim, mirror it into the hidden bulk_delimiter so the route sees it
-    fileDelim?.addEventListener("change", () => {
-        if (fileDelim.value && bulkDelim) bulkDelim.value = fileDelim.value;
-    });
 
     // ---------- Disable inactive-pane fields on submit so they don't get sent ----------
     form.addEventListener("submit", () => {
+        if (inputModeField.value === "paste" && bulkText && bulkDelim) {
+            bulkDelim.value = detectDelimiter(bulkText.value);
+        }
         const active = inputModeField.value;
         panes.forEach(p => {
             if (p.dataset.modePane === active) return;
@@ -423,7 +418,6 @@
 
     // Hook paste/title/desc/emoji/tags into autosave too
     bulkText?.addEventListener("input", scheduleSave);
-    bulkDelim?.addEventListener("change", scheduleSave);
     document.querySelector("#title")?.addEventListener("input", scheduleSave);
     document.querySelector("#description")?.addEventListener("input", scheduleSave);
     tabs.forEach(t => t.addEventListener("click", () => scheduleSave()));

@@ -46,6 +46,18 @@ def _timeago(dt):
     return f"{years} year{'s' if years != 1 else ''} ago"
 
 
+def _is_emoji_like(s):
+    """Used as a Jinja test (`{% if x is emoji %}`).
+
+    True only when the string looks like an emoji — no ASCII letters,
+    digits or whitespace. Used to hide legacy text that ended up
+    in the `cover_emoji` field before the picker was tightened.
+    """
+    if not s:
+        return False
+    return not any(ch.isascii() and (ch.isalnum() or ch.isspace()) for ch in str(s))
+
+
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
@@ -56,6 +68,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
 
     app.jinja_env.filters["timeago"] = _timeago
+    app.jinja_env.tests["emoji"] = _is_emoji_like
 
     from app import models
     from app.routes import main

@@ -42,8 +42,7 @@
                    data-cards="{{ s.flashcards|length }}"
                    data-id="{{ s.id }}"
                    data-vis="{{ 'public' if s.is_public else 'private' }}">
-                    {% if s.cover_emoji %}<div class="set-emoji-large">{{ s.cover_emoji }}</div>{% endif %}
-                    <h3>{{ s.title }}</h3>
+                    <h3>{% if s.cover_emoji is emoji %}<span class="set-emoji">{{ s.cover_emoji }}</span> {% endif %}{{ s.title }}</h3>
                     {% if s.description %}
                         <p>{{ s.description[:80] }}{% if s.description|length > 80 %}…{% endif %}</p>
                     {% endif %}

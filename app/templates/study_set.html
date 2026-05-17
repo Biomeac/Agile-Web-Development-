@@ -6,7 +6,7 @@
 <section class="profile">
     <div class="profile-info">
         <a class="back-link" href="{{ url_for('main.study_sets') }}">← my study sets</a>
-        <h1>{% if study_set.cover_emoji %}<span class="set-emoji-title">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h1>
+        <h1>{% if study_set.cover_emoji is emoji %}<span class="set-emoji-title">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h1>
         {% if study_set.description %}
             <p>{{ study_set.description }}</p>
         {% else %}

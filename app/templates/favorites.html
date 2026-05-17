@@ -20,10 +20,9 @@
                                 if is_mine
                                 else url_for('main.browse_public_study_set', study_set_id=s.id) %}
                 <a class="flashcard-preview" href="{{ target }}">
-                    {% if s.cover_emoji %}<div class="set-emoji-large">{{ s.cover_emoji }}</div>{% endif %}
                     <h3>
                         <i class="fa-solid fa-heart" style="color:var(--accent); font-size:0.85em;" aria-hidden="true"></i>
-                        {{ s.title }}
+                        {% if s.cover_emoji is emoji %}<span class="set-emoji">{{ s.cover_emoji }}</span> {% endif %}{{ s.title }}
                     </h3>
                     {% if s.description %}
                         <p>{{ s.description[:80] }}{% if s.description|length > 80 %}…{% endif %}</p>

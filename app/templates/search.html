@@ -42,7 +42,7 @@
         <div class="set-list">
             {% for study_set in results %}
                 <a class="flashcard-preview" href="{{ url_for('main.browse_public_study_set', study_set_id=study_set.id) }}">
-                    <h3>{% if study_set.cover_emoji %}<span class="set-emoji">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h3>
+                    <h3>{% if study_set.cover_emoji is emoji %}<span class="set-emoji">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h3>
                     <p>{{ study_set.description or "No description yet." }}</p>
                     {% if study_set.tags %}
                         <div class="tag-row">

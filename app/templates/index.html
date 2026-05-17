@@ -70,7 +70,7 @@
                 {% set tag = 'a' if current_user.is_authenticated else 'article' %}
                 <{{ tag }} class="flashcard-preview"
                     {% if current_user.is_authenticated %} href="{{ url_for('main.browse_public_study_set', study_set_id=study_set.id) }}"{% endif %}>
-                    <h3>{% if study_set.cover_emoji %}<span class="set-emoji">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h3>
+                    <h3>{% if study_set.cover_emoji is emoji %}<span class="set-emoji">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h3>
                     {% if study_set.description %}
                         <p>{{ study_set.description[:80] }}{% if study_set.description|length > 80 %}…{% endif %}</p>
                     {% endif %}

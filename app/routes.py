@@ -176,6 +176,18 @@ def _parse_bulk(text, delimiter_key):
     return pairs
 
 
+def _guess_delimiter(text):
+    """Pick tab/comma/pipe/dash by whichever yields the most card pairs."""
+    best_key = "tab"
+    best_count = 0
+    for key in DELIMITER_MAP:
+        count = len(_parse_bulk(text, key))
+        if count > best_count:
+            best_count = count
+            best_key = key
+    return best_key
+
+
 @main.route("/study-sets/new", methods=["GET", "POST"])
 @login_required
 def create_study_set():
@@ -187,7 +199,8 @@ def create_study_set():
         pairs = []
         if mode == "paste":
             text = request.form.get("bulk_text", "")
-            pairs = _parse_bulk(text, request.form.get("bulk_delimiter", "tab"))
+            delim = request.form.get("bulk_delimiter") or _guess_delimiter(text)
+            pairs = _parse_bulk(text, delim)
         elif mode == "upload":
             uploaded = request.files.get("bulk_file")
             if uploaded and uploaded.filename:
@@ -198,7 +211,7 @@ def create_study_set():
                 # Default to comma for .csv, tab for .tsv, else fall back to form field.
                 name = uploaded.filename.lower()
                 guess = "comma" if name.endswith(".csv") else "tab" if name.endswith(".tsv") else None
-                pairs = _parse_bulk(text, guess or request.form.get("bulk_delimiter", "tab"))
+                pairs = _parse_bulk(text, guess or _guess_delimiter(text))
         else:
             terms = request.form.getlist("term")
             definitions = request.form.getlist("definition")
@@ -672,6 +685,123 @@ def submit_time_session(study_set_id):
         "session_id": session.id,
         "accuracy": round(session.accuracy, 3),
     })
+
+
+STATIC_PAGES = [
+    ("Dashboard",          "main.index",              "fa-house"),
+    ("My study sets",      "main.study_sets",         "fa-book"),
+    ("Search public sets", "main.search_public_sets", "fa-magnifying-glass"),
+    ("Create new set",     "main.create_study_set",   "fa-plus"),
+    ("Favorites",          "main.favorites",          "fa-heart"),
+    ("Analytics",          "main.analytics",          "fa-chart-bar"),
+    ("Settings",           "main.settings",           "fa-gear"),
+    ("Profile",            "main.profile",            "fa-user"),
+]
+
+
+def _safe_emoji(s):
+    """Return s only if it looks like an emoji; otherwise None."""
+    if not s:
+        return None
+    if any(c.isascii() and (c.isalnum() or c.isspace()) for c in s):
+        return None
+    return s
+
+
+@main.route("/api/search")
+@login_required
+def api_search():
+    """Quick site-wide search used by the header bar.
+
+    Returns up to ~25 results grouped by type. Pages first, then sets,
+    then individual cards / tags. Each result has the same shape so the
+    client can render them uniformly.
+    """
+    q = (request.args.get("q") or "").strip()
+    results = []
+
+    # Static pages — match anytime, even on a single char.
+    if q:
+        ql = q.lower()
+        for label, endpoint, icon in STATIC_PAGES:
+            if ql in label.lower():
+                results.append({
+                    "type": "page",
+                    "title": label,
+                    "subtitle": "Page",
+                    "url": url_for(endpoint),
+                    "icon": icon,
+                })
+
+    # The rest need at least two characters before we hit the DB.
+    if len(q) >= 2:
+        pat = f"%{q}%"
+
+        own = (
+            StudySet.query
+            .filter(StudySet.user_id == current_user.id)
+            .filter(or_(StudySet.title.ilike(pat), StudySet.description.ilike(pat)))
+            .limit(5).all()
+        )
+        for s in own:
+            results.append({
+                "type": "set",
+                "title": s.title,
+                "subtitle": f"Your set · {len(s.flashcards)} card{'s' if len(s.flashcards) != 1 else ''}",
+                "url": url_for("main.study_set_detail", study_set_id=s.id),
+                "icon": "fa-book",
+                "emoji": _safe_emoji(s.cover_emoji),
+            })
+
+        pub = (
+            StudySet.query
+            .filter(StudySet.user_id != current_user.id, StudySet.is_public == True)
+            .filter(or_(StudySet.title.ilike(pat), StudySet.description.ilike(pat)))
+            .limit(5).all()
+        )
+        for s in pub:
+            results.append({
+                "type": "public",
+                "title": s.title,
+                "subtitle": f"Public · by {s.owner.username}",
+                "url": url_for("main.browse_public_study_set", study_set_id=s.id),
+                "icon": "fa-users",
+                "emoji": _safe_emoji(s.cover_emoji),
+            })
+
+        tags = Tag.query.filter(Tag.name.ilike(pat)).limit(4).all()
+        for t in tags:
+            results.append({
+                "type": "tag",
+                "title": "#" + t.name,
+                "subtitle": f"Tag · {len(t.study_sets)} set{'s' if len(t.study_sets) != 1 else ''}",
+                "url": url_for("main.search_public_sets", q=t.name),
+                "icon": "fa-tag",
+            })
+
+        cards = (
+            Flashcard.query.join(StudySet)
+            .filter(or_(
+                StudySet.user_id == current_user.id,
+                StudySet.is_public == True,
+            ))
+            .filter(or_(Flashcard.question.ilike(pat), Flashcard.answer.ilike(pat)))
+            .limit(6).all()
+        )
+        for c in cards:
+            results.append({
+                "type": "card",
+                "title": (c.question or "")[:80],
+                "subtitle": f"Card in {c.study_set.title}",
+                "url": (
+                    url_for("main.study_set_detail", study_set_id=c.study_set_id)
+                    if c.study_set.user_id == current_user.id
+                    else url_for("main.browse_public_study_set", study_set_id=c.study_set_id)
+                ),
+                "icon": "fa-rectangle-list",
+            })
+
+    return jsonify({"q": q, "results": results})
 
 
 @main.route("/modes/<mode>")
