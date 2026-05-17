@@ -3,7 +3,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import or_
 
 from app import db
-from app.models import Flashcard, StudySession, StudySet, User
+from app.models import Favorite, Flashcard, StudySession, StudySet, User
 
 
 main = Blueprint("main", __name__)
@@ -241,7 +241,18 @@ def search_public_sets():
 @login_required
 def study_set_detail(study_set_id):
     study_set = get_owned_study_set_or_404(study_set_id)
-    return render_template("study_set.html", study_set=study_set)
+    recent_sessions = (
+        StudySession.query
+        .filter_by(study_set_id=study_set.id, user_id=current_user.id)
+        .order_by(StudySession.finished_at.desc())
+        .limit(8)
+        .all()
+    )
+    return render_template(
+        "study_set.html",
+        study_set=study_set,
+        recent_sessions=recent_sessions,
+    )
 
 
 @main.route("/study-sets/<int:study_set_id>/edit", methods=["GET", "POST"])
@@ -326,7 +337,61 @@ def browse_public_study_set(study_set_id):
     study_set = StudySet.query.filter_by(id=study_set_id, is_public=True).first()
     if study_set is None:
         abort(404)
-    return render_template("browse_study_set.html", study_set=study_set)
+    recent_sessions = (
+        StudySession.query
+        .filter_by(study_set_id=study_set.id, user_id=current_user.id)
+        .order_by(StudySession.finished_at.desc())
+        .limit(8)
+        .all()
+    )
+    is_favorited = Favorite.query.filter_by(
+        user_id=current_user.id, study_set_id=study_set.id
+    ).first() is not None
+    return render_template(
+        "browse_study_set.html",
+        study_set=study_set,
+        recent_sessions=recent_sessions,
+        is_favorited=is_favorited,
+    )
+
+
+@main.route("/study-sets/<int:study_set_id>/favorite", methods=["POST"])
+@login_required
+def toggle_favorite(study_set_id):
+    study_set = get_playable_study_set_or_404(study_set_id)
+    existing = Favorite.query.filter_by(
+        user_id=current_user.id, study_set_id=study_set.id
+    ).first()
+    if existing:
+        db.session.delete(existing)
+        favorited = False
+    else:
+        db.session.add(Favorite(user_id=current_user.id, study_set_id=study_set.id))
+        favorited = True
+    db.session.commit()
+
+    if request.is_json or "application/json" in (request.headers.get("Accept") or ""):
+        return jsonify({"ok": True, "favorited": favorited})
+
+    fallback = url_for("main.browse_public_study_set", study_set_id=study_set.id)
+    return redirect(request.referrer or fallback)
+
+
+@main.route("/favorites")
+@login_required
+def favorites():
+    rows = (
+        Favorite.query
+        .filter_by(user_id=current_user.id)
+        .order_by(Favorite.created_at.desc())
+        .all()
+    )
+    # Hide sets that were unpublished by their owner (unless we own them).
+    visible = [
+        f.study_set for f in rows
+        if f.study_set.is_public or f.study_set.user_id == current_user.id
+    ]
+    return render_template("favorites.html", study_sets=visible)
 
 
 @main.route("/study-sets/<int:study_set_id>/study")

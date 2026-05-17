@@ -1323,3 +1323,153 @@ textarea.text-input:focus {
     .search-form  { grid-template-columns: 1fr; }
     .hero-sketch  { display: none; }
 }
+
+/* ---------- SCORE HISTORY (RECENT SESSIONS) ---------- */
+
+.recent-sessions {
+    margin-top: 2rem;
+}
+
+.session-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+}
+
+.session-row {
+    display: grid;
+    grid-template-columns: 90px 80px minmax(120px, 1fr) 56px 110px;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.75rem 1.1rem;
+    border-bottom: 1px dashed var(--paper-line);
+    font-family: "Nunito", sans-serif;
+    font-size: 0.92rem;
+}
+
+.session-row:last-child { border-bottom: 0; }
+
+.session-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.55rem;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.session-mode.mode-quiz { background: var(--sticky-b); }
+.session-mode.mode-time { background: var(--sticky-p); }
+
+.session-score {
+    font-size: 1rem;
+    color: var(--ink);
+    font-weight: 700;
+}
+.session-score b {
+    font-family: "Fraunces", serif;
+    font-size: 1.2rem;
+    margin-right: 0.1rem;
+}
+.session-score .session-of {
+    color: var(--ink-faint);
+    font-weight: 500;
+}
+
+.session-bar {
+    display: block;
+    width: 100%;
+    height: 8px;
+    background: var(--paper-deep);
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.session-bar-fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+}
+
+.session-pct {
+    font-family: "Fraunces", serif;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: right;
+}
+
+.session-time {
+    color: var(--ink-faint);
+    font-family: "Caveat", cursive;
+    font-size: 1.05rem;
+    text-align: right;
+}
+
+@media (max-width: 700px) {
+    .session-row {
+        grid-template-columns: 70px 1fr 50px;
+        grid-template-areas:
+            "mode  score   pct"
+            "bar   bar     bar"
+            "time  time    time";
+        gap: 0.4rem;
+    }
+    .session-mode  { grid-area: mode; }
+    .session-score { grid-area: score; }
+    .session-bar   { grid-area: bar; }
+    .session-pct   { grid-area: pct; }
+    .session-time  { grid-area: time; text-align: left; }
+}
+
+/* ---------- FAVORITE HEART BUTTON ---------- */
+
+.fav-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 42px;
+    padding: 0 1rem;
+    background: var(--card);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    font-family: "Nunito", sans-serif;
+    font-size: 0.92rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease,
+                background 0.15s ease, color 0.15s ease;
+}
+
+.fav-button:hover:not(:disabled) {
+    background: var(--sticky-p);
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 0 var(--ink);
+}
+
+.fav-button:disabled { opacity: 0.7; cursor: wait; }
+
+.fav-button i {
+    font-size: 1rem;
+    transition: transform 0.15s ease;
+}
+
+.fav-button.is-favorited {
+    background: var(--sticky-p);
+    color: var(--accent);
+}
+
+.fav-button.is-favorited i {
+    color: var(--accent);
+    transform: scale(1.15);
+}
