@@ -15,9 +15,10 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    streak = db.Column(db.Integer, default=0)         
-    achievements = db.Column(db.Integer, default=0) 
-    last_active = db.Column(db.DateTime, nullable=True) 
+    streak = db.Column(db.Integer, default=0)
+    achievements = db.Column(db.Integer, default=0)
+    last_active = db.Column(db.DateTime, nullable=True)
+    avatar_emoji = db.Column(db.String(8), nullable=True)
     study_sets = db.relationship("StudySet", back_populates="owner", lazy=True)
 
     def set_password(self, password):
