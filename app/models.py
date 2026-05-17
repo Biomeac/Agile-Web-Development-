@@ -75,3 +75,34 @@ class Flashcard(db.Model):
     answer = db.Column(db.Text, nullable=False)
     study_set_id = db.Column(db.Integer, db.ForeignKey("study_set.id"), nullable=False)
     study_set = db.relationship("StudySet", back_populates="flashcards")
+
+
+class StudySession(db.Model):
+    """A completed Quiz or Time-Game run by a user against one of their sets."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
+    study_set_id = db.Column(
+        db.Integer, db.ForeignKey("study_set.id"), nullable=False, index=True
+    )
+    mode = db.Column(db.String(20), nullable=False)  # "quiz" or "time"
+    score = db.Column(db.Integer, nullable=False)
+    total = db.Column(db.Integer, nullable=False)
+    accuracy = db.Column(db.Float, nullable=False)   # 0.0 – 1.0
+    finished_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+
+    user = db.relationship(
+        "User",
+        backref=db.backref("study_sessions", lazy=True, cascade="all, delete-orphan"),
+    )
+    study_set = db.relationship(
+        "StudySet",
+        backref=db.backref("sessions", lazy=True, cascade="all, delete-orphan"),
+    )

@@ -294,6 +294,16 @@
             pct >= 50  ? "Not bad. Try again?" :
                          "Worth another go.";
         document.querySelector("#r-message").textContent = msg;
+        recordSession(score, order.length);
+    }
+
+    function recordSession(score, total) {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
+        fetch("{{ url_for('main.submit_quiz_session', study_set_id=study_set.id) }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrf || "" },
+            body: JSON.stringify({ score: score, total: total }),
+        }).catch(() => { /* non-fatal — session recording is best-effort */ });
     }
 
     document.querySelector("#r-retry").addEventListener("click", start);

@@ -397,6 +397,16 @@
             right >= 6  ? "Solid effort." :
                           "Try another round.";
         document.querySelector("#r-message").textContent = msg;
+        if (total > 0) recordSession(right, wrong);
+    }
+
+    function recordSession(rightCount, wrongCount) {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
+        fetch("{{ url_for('main.submit_time_session', study_set_id=study_set.id) }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRFToken": csrf || "" },
+            body: JSON.stringify({ right: rightCount, wrong: wrongCount }),
+        }).catch(() => { /* non-fatal — session recording is best-effort */ });
     }
 
     startButton.addEventListener("click", () => {

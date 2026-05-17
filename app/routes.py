@@ -1,9 +1,9 @@
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import or_
 
 from app import db
-from app.models import Flashcard, StudySet, User
+from app.models import Flashcard, StudySession, StudySet, User
 
 
 main = Blueprint("main", __name__)
@@ -398,6 +398,70 @@ def study_set_time(study_set_id):
         flash("Add at least two flashcards before starting Time Game.")
         return redirect(url_for("main.study_set_detail", study_set_id=study_set.id))
     return render_template("time_mode.html", study_set=study_set)
+
+
+def _record_session(study_set, mode, score, total):
+    accuracy = (score / total) if total > 0 else 0.0
+    session = StudySession(
+        user_id=current_user.id,
+        study_set_id=study_set.id,
+        mode=mode,
+        score=score,
+        total=total,
+        accuracy=accuracy,
+    )
+    db.session.add(session)
+    db.session.commit()
+    return session
+
+
+def _parse_int(payload, key):
+    try:
+        return int(payload.get(key, 0))
+    except (TypeError, ValueError):
+        return None
+
+
+@main.route("/study-sets/<int:study_set_id>/quiz/submit", methods=["POST"])
+@login_required
+def submit_quiz_session(study_set_id):
+    study_set = get_owned_study_set_or_404(study_set_id)
+    payload = request.get_json(silent=True) or {}
+
+    score = _parse_int(payload, "score")
+    total = _parse_int(payload, "total")
+    if score is None or total is None or total <= 0 or score < 0 or score > total:
+        return jsonify({"ok": False, "error": "invalid score / total"}), 400
+
+    session = _record_session(study_set, "quiz", score, total)
+    return jsonify({
+        "ok": True,
+        "session_id": session.id,
+        "accuracy": round(session.accuracy, 3),
+    })
+
+
+@main.route("/study-sets/<int:study_set_id>/time/submit", methods=["POST"])
+@login_required
+def submit_time_session(study_set_id):
+    study_set = get_owned_study_set_or_404(study_set_id)
+    payload = request.get_json(silent=True) or {}
+
+    right = _parse_int(payload, "right")
+    wrong = _parse_int(payload, "wrong")
+    if right is None or wrong is None or right < 0 or wrong < 0:
+        return jsonify({"ok": False, "error": "invalid right / wrong counts"}), 400
+
+    total = right + wrong
+    if total == 0:
+        return jsonify({"ok": False, "error": "no answers recorded"}), 400
+
+    session = _record_session(study_set, "time", right, total)
+    return jsonify({
+        "ok": True,
+        "session_id": session.id,
+        "accuracy": round(session.accuracy, 3),
+    })
 
 
 @main.route("/modes/<mode>")
