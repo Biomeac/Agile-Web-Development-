@@ -72,6 +72,12 @@
                     <span>Search</span>
                 </a>
 
+                <a class="nav-item {% if request.endpoint == 'main.favorites' %}active{% endif %}"
+                   href="{{ url_for('main.favorites') }}" aria-label="Favorites">
+                    <i class="fa-solid fa-heart" aria-hidden="true"></i>
+                    <span>Favorites</span>
+                </a>
+
                 <a class="nav-item {% if request.endpoint == 'main.create_study_set' %}active{% endif %}"
                    href="{{ url_for('main.create_study_set') }}" aria-label="Create new set">
                     <i class="fa-solid fa-plus" aria-hidden="true"></i>

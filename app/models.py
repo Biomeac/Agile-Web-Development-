@@ -77,6 +77,36 @@ class Flashcard(db.Model):
     study_set = db.relationship("StudySet", back_populates="flashcards")
 
 
+class Favorite(db.Model):
+    """A user's bookmark of a study set (their own or someone else's)."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    )
+    study_set_id = db.Column(
+        db.Integer, db.ForeignKey("study_set.id"), nullable=False, index=True
+    )
+    created_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "study_set_id", name="uq_favorite_user_set"),
+    )
+
+    user = db.relationship(
+        "User",
+        backref=db.backref("favorites", lazy=True, cascade="all, delete-orphan"),
+    )
+    study_set = db.relationship(
+        "StudySet",
+        backref=db.backref("favorited_by", lazy=True, cascade="all, delete-orphan"),
+    )
+
+
 class StudySession(db.Model):
     """A completed Quiz or Time-Game run by a user against one of their sets."""
 
