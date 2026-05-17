@@ -54,11 +54,52 @@ class User(UserMixin, db.Model):
             count += 1
         self.achievements = count
 
+study_set_tag = db.Table(
+    "study_set_tag",
+    db.Column("study_set_id", db.Integer, db.ForeignKey("study_set.id"), primary_key=True),
+    db.Column("tag_id", db.Integer, db.ForeignKey("tag.id"), primary_key=True),
+)
+
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40), unique=True, nullable=False, index=True)
+
+    study_sets = db.relationship(
+        "StudySet", secondary=study_set_tag, back_populates="tags"
+    )
+
+    @staticmethod
+    def normalize(raw):
+        """Lower-case, hyphenate spaces, strip everything that isn't a-z0-9 or hyphen."""
+        if not raw:
+            return ""
+        s = raw.strip().lower().replace(" ", "-")
+        out = []
+        for ch in s:
+            if ch.isalnum() or ch == "-":
+                out.append(ch)
+        return "".join(out).strip("-")[:40]
+
+    @classmethod
+    def get_or_create(cls, raw):
+        name = cls.normalize(raw)
+        if not name:
+            return None
+        existing = cls.query.filter_by(name=name).first()
+        if existing:
+            return existing
+        tag = cls(name=name)
+        db.session.add(tag)
+        return tag
+
+
 class StudySet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
     is_public = db.Column(db.Boolean, default=True, nullable=False)
+    cover_emoji = db.Column(db.String(8), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     owner = db.relationship("User", back_populates="study_sets")
     flashcards = db.relationship(
@@ -66,6 +107,9 @@ class StudySet(db.Model):
         back_populates="study_set",
         lazy=True,
         cascade="all, delete-orphan",
+    )
+    tags = db.relationship(
+        "Tag", secondary=study_set_tag, back_populates="study_sets", lazy="joined"
     )
 
 

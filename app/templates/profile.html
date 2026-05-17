@@ -44,9 +44,15 @@
             <div class="set-list">
                 {% for s in study_sets %}
                     <a class="flashcard-preview" href="{{ url_for('main.study_set_detail', study_set_id=s.id) }}">
+                        {% if s.cover_emoji %}<div class="set-emoji-large">{{ s.cover_emoji }}</div>{% endif %}
                         <h3>{{ s.title }}</h3>
                         {% if s.description %}
                             <p>{{ s.description[:80] }}{% if s.description|length > 80 %}…{% endif %}</p>
+                        {% endif %}
+                        {% if s.tags %}
+                            <div class="tag-row">
+                                {% for t in s.tags %}<span class="tag-chip">#{{ t.name }}</span>{% endfor %}
+                            </div>
                         {% endif %}
                         <div class="set-meta">
                             <span class="card-count">{{ s.flashcards|length }} terms</span>

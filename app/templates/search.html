@@ -42,8 +42,13 @@
         <div class="set-list">
             {% for study_set in results %}
                 <a class="flashcard-preview" href="{{ url_for('main.browse_public_study_set', study_set_id=study_set.id) }}">
-                    <h3>{{ study_set.title }}</h3>
+                    <h3>{% if study_set.cover_emoji %}<span class="set-emoji">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h3>
                     <p>{{ study_set.description or "No description yet." }}</p>
+                    {% if study_set.tags %}
+                        <div class="tag-row">
+                            {% for t in study_set.tags %}<span class="tag-chip">#{{ t.name }}</span>{% endfor %}
+                        </div>
+                    {% endif %}
                     <div class="set-meta">
                         <span class="card-count">{{ study_set.flashcards|length }} cards</span>
                         <span class="set-owner">by {{ study_set.owner.username }}</span>

@@ -6,11 +6,16 @@
 <section class="profile">
     <div class="profile-info">
         <a class="back-link" href="{{ url_for('main.search_public_sets') }}">← back to search</a>
-        <h1>{{ study_set.title }}</h1>
+        <h1>{% if study_set.cover_emoji %}<span class="set-emoji-title">{{ study_set.cover_emoji }}</span> {% endif %}{{ study_set.title }}</h1>
         {% if study_set.description %}
             <p>{{ study_set.description }}</p>
         {% else %}
             <p class="muted-italic">No description.</p>
+        {% endif %}
+        {% if study_set.tags %}
+            <div class="tag-row" style="margin-top:0.4rem;">
+                {% for t in study_set.tags %}<span class="tag-chip">#{{ t.name }}</span>{% endfor %}
+            </div>
         {% endif %}
         <p class="set-attribution">
             <span class="card-count">{{ study_set.flashcards|length }} cards</span>
