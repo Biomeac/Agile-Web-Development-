@@ -41,28 +41,26 @@
         <div class="card-section">
             <h3>The basics</h3>
 
-            <div class="emoji-title-row">
-                <div class="emoji-picker">
-                    <label for="cover_emoji" class="sr-only">Cover emoji</label>
-                    <input type="text" id="cover_emoji" name="cover_emoji" maxlength="8"
-                           placeholder="📘" value="📘" autocomplete="off">
-                    <div class="emoji-quick" aria-hidden="true">
-                        <button type="button" data-emoji="📘">📘</button>
-                        <button type="button" data-emoji="🧠">🧠</button>
-                        <button type="button" data-emoji="🧪">🧪</button>
-                        <button type="button" data-emoji="🌍">🌍</button>
-                        <button type="button" data-emoji="🔢">🔢</button>
-                        <button type="button" data-emoji="🎨">🎨</button>
-                        <button type="button" data-emoji="🎵">🎵</button>
-                        <button type="button" data-emoji="💻">💻</button>
-                    </div>
+            <label class="emoji-label">Cover emoji <span class="hint-handwritten">(optional)</span></label>
+            <div class="emoji-picker-v2">
+                <div class="emoji-current" id="emoji-current" aria-live="polite">
+                    <span class="emoji-current-glyph" id="emoji-current-glyph">📘</span>
                 </div>
-                <div class="emoji-title-field">
-                    <label for="title">Set title</label>
-                    <input type="text" id="title" name="title" placeholder="e.g. Biology 101"
-                           maxlength="120" required>
+                <div class="emoji-grid" role="group" aria-label="Pick a cover emoji">
+                    {% set emoji_choices = ['📘','🧠','🧪','🌍','🔢','🎨','🎵','💻','📚','✏️','🧬','🗺️','⚽','🍎','🎬','⚙️','🚀','💡','🔬','🎯'] %}
+                    {% for e in emoji_choices %}
+                        <button type="button" class="emoji-chip" data-emoji="{{ e }}" aria-label="{{ e }}">{{ e }}</button>
+                    {% endfor %}
+                    <button type="button" class="emoji-chip emoji-clear" data-emoji="" aria-label="No emoji" title="No emoji">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
+                <input type="hidden" id="cover_emoji" name="cover_emoji" value="📘">
             </div>
+
+            <label for="title">Set title</label>
+            <input type="text" id="title" name="title" placeholder="e.g. Biology 101"
+                   maxlength="120" required>
 
             <label for="description">Description</label>
             <textarea id="description" name="description"
@@ -430,15 +428,39 @@
     document.querySelector("#description")?.addEventListener("input", scheduleSave);
     tabs.forEach(t => t.addEventListener("click", () => scheduleSave()));
 
-    // ---------- Emoji quick-pick ----------
+    // ---------- Emoji picker (button-only, no freetext) ----------
     const emojiInput = document.querySelector("#cover_emoji");
-    document.querySelectorAll(".emoji-quick button").forEach(btn => {
+    const emojiCurrent = document.querySelector("#emoji-current");
+    const emojiCurrentGlyph = document.querySelector("#emoji-current-glyph");
+    const emojiChips = document.querySelectorAll(".emoji-chip");
+
+    function setEmoji(value) {
+        if (!emojiInput) return;
+        const v = sanitizeEmoji(value);
+        emojiInput.value = v;
+        if (emojiCurrentGlyph) emojiCurrentGlyph.textContent = v || "—";
+        if (emojiCurrent) emojiCurrent.classList.toggle("is-empty", !v);
+        emojiChips.forEach(c => {
+            c.classList.toggle("is-active", (c.dataset.emoji || "") === v);
+        });
+    }
+
+    // Only accept actual emoji-looking strings: no letters / digits / whitespace
+    function sanitizeEmoji(s) {
+        if (!s) return "";
+        const t = String(s).trim();
+        if (!t) return "";
+        if (/[a-zA-Z0-9\s]/.test(t)) return "";
+        return t.slice(0, 8);
+    }
+
+    emojiChips.forEach(btn => {
         btn.addEventListener("click", () => {
-            if (!emojiInput) return;
-            emojiInput.value = btn.dataset.emoji;
+            setEmoji(btn.dataset.emoji || "");
             scheduleSave();
         });
     });
+    setEmoji(emojiInput?.value || "📘");
 
     // ---------- Tag chip preview ----------
     const tagsInput = document.querySelector("#tags");
@@ -470,7 +492,6 @@
         });
     }
     tagsInput?.addEventListener("input", () => { refreshTagChips(); scheduleSave(); });
-    emojiInput?.addEventListener("input", scheduleSave);
     refreshTagChips();
 
     // ---------- Sortable: drag handles to reorder cards ----------
@@ -542,7 +563,7 @@
         document.querySelector("#title").value = draft.title || "";
         const descEl = document.querySelector("#description");
         if (descEl) { descEl.value = draft.description || ""; autogrow(descEl); }
-        if (emojiInput && draft.emoji) emojiInput.value = draft.emoji;
+        if (emojiInput) setEmoji(draft.emoji || "");
         if (tagsInput) { tagsInput.value = draft.tags || ""; refreshTagChips(); }
         if (bulkText) bulkText.value = draft.bulkText || "";
         if (bulkDelim && draft.bulkDelim) bulkDelim.value = draft.bulkDelim;

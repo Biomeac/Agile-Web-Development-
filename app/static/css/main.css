@@ -1770,48 +1770,89 @@ textarea.autogrow {
     background: var(--card);
 }
 
-/* ---------- CREATE SET: emoji picker + tag chips ---------- */
+/* ---------- CREATE SET: emoji picker v2 (button grid only) ---------- */
 
-.emoji-title-row {
+.emoji-label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+}
+
+.emoji-picker-v2 {
     display: grid;
-    grid-template-columns: minmax(120px, auto) 1fr;
-    gap: 1rem;
-    align-items: end;
-    margin-bottom: 0.8rem;
+    grid-template-columns: 76px 1fr;
+    gap: 0.9rem;
+    align-items: center;
+    margin: 0.3rem 0 0.9rem;
 }
 @media (max-width: 520px) {
-    .emoji-title-row { grid-template-columns: 1fr; }
+    .emoji-picker-v2 { grid-template-columns: 1fr; }
 }
 
-.emoji-picker {
-    display: flex;
-    flex-direction: column;
+.emoji-current {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    background: var(--sticky-y);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+}
+.emoji-current.is-empty {
+    background: var(--paper-deep);
+    box-shadow: none;
+}
+.emoji-current-glyph {
+    font-size: 2.4rem;
+    line-height: 1;
+}
+.emoji-current.is-empty .emoji-current-glyph {
+    font-family: "Caveat", cursive;
+    color: var(--ink-faint);
+    font-size: 1.2rem;
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
     gap: 0.35rem;
 }
-.emoji-picker input {
-    width: 100%;
-    text-align: center;
-    font-size: 1.6rem;
+
+.emoji-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    background: var(--card);
+    border: 1.5px solid var(--paper-line);
+    border-radius: 10px;
+    font-size: 1.35rem;
     line-height: 1;
-    padding: 0.5rem 0.4rem !important;
-}
-.emoji-quick {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.2rem;
-}
-.emoji-quick button {
-    background: var(--paper-deep);
-    border: 1px solid var(--paper-line);
-    border-radius: 6px;
-    padding: 0.18rem 0;
     cursor: pointer;
-    font-size: 1.1rem;
-    line-height: 1;
-    transition: background 0.1s, transform 0.06s;
+    transition: transform 0.08s, background 0.12s, border-color 0.12s, box-shadow 0.08s;
 }
-.emoji-quick button:hover { background: var(--sticky-y); transform: scale(1.1); }
-.emoji-title-field { display: flex; flex-direction: column; }
+.emoji-chip:hover {
+    background: var(--sticky-y);
+    border-color: var(--ink);
+    transform: translateY(-1px);
+}
+.emoji-chip.is-active {
+    background: var(--sticky-y);
+    border-color: var(--ink);
+    box-shadow: 0 0 0 2px var(--ink) inset, var(--shadow-soft);
+    transform: translateY(-1px);
+}
+
+.emoji-chip.emoji-clear {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+}
+.emoji-chip.emoji-clear:hover {
+    color: var(--danger);
+    background: var(--sticky-p);
+    border-color: var(--danger);
+}
 
 .tag-preview {
     display: flex;
@@ -1863,4 +1904,205 @@ textarea.autogrow {
     margin-right: 0.15em;
     font-size: 0.95em;
     line-height: 1;
+}
+
+/* ---------- HEADER welcome avatar ---------- */
+.welcome-avatar {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    background: var(--sticky-y);
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+/* ---------- MY STUDY SETS — toolbar + filter ---------- */
+.my-sets-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1rem 0 1.4rem;
+    flex-wrap: wrap;
+}
+.my-sets-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+.set-filter-input {
+    padding: 0.55rem 0.9rem !important;
+    min-width: 220px;
+}
+.set-sort-select { min-width: 160px; }
+.set-vis-toggle {
+    display: inline-flex;
+    background: var(--paper-deep);
+    border: 1.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 0.25rem;
+}
+.vis-tab {
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.4rem 0.85rem;
+    font-family: "Nunito", sans-serif;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: color 0.12s, background 0.12s;
+}
+.vis-tab:hover { color: var(--ink); }
+.vis-tab.is-active {
+    background: var(--card);
+    color: var(--accent);
+    box-shadow: 0 1px 0 var(--paper-line), 0 2px 6px rgba(21, 25, 46, 0.06);
+}
+
+/* ---------- PROFILE PAGE ---------- */
+.profile-page { max-width: 980px; }
+
+.profile-identity {
+    display: flex;
+    align-items: center;
+    gap: 1.6rem;
+    padding: 1.6rem;
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-hard);
+    margin-bottom: 1.6rem;
+    flex-wrap: wrap;
+}
+.profile-identity .eyebrow { margin-bottom: 0.25rem; }
+.profile-identity h1 { margin: 0 0 0.25rem; font-size: clamp(2rem, 3.6vw, 2.7rem); }
+.profile-email { margin: 0 0 0.9rem; color: var(--ink-soft); font-weight: 700; }
+.profile-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.profile-identity-body { flex: 1 1 280px; }
+
+.avatar-circle {
+    display: grid;
+    place-items: center;
+    width: 110px;
+    height: 110px;
+    background: var(--sticky-y);
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    box-shadow: var(--shadow-hard);
+    flex: 0 0 auto;
+}
+.avatar-circle .avatar-glyph { font-size: 3.4rem; line-height: 1; }
+.avatar-circle .avatar-initial {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 3rem;
+    color: var(--ink);
+    font-weight: 700;
+}
+.avatar-circle.avatar-circle-sm {
+    width: 56px; height: 56px;
+    box-shadow: var(--shadow-soft);
+}
+.avatar-circle.avatar-circle-sm .avatar-glyph { font-size: 1.8rem; }
+.avatar-circle.avatar-circle-sm .avatar-initial { font-size: 1.6rem; }
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 2rem;
+}
+.stat-mini { padding: 1rem 1.1rem; }
+.stat-mini h2 {
+    margin: 0 0 0.2rem;
+    font-family: "Fraunces", serif;
+    font-size: 1.9rem;
+    color: var(--accent);
+}
+.stat-mini .stat-unit { font-size: 1.05rem; color: var(--ink-soft); }
+.stat-mini p { margin: 0; color: var(--ink-soft); font-size: 0.82rem; font-weight: 700; }
+
+.profile-section { margin-bottom: 2rem; }
+
+/* Achievements gallery */
+.achievement-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.8rem;
+}
+.achievement {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
+    background: var(--card);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.12s;
+}
+.achievement.is-locked {
+    opacity: 0.55;
+    background: var(--paper-deep);
+    box-shadow: none;
+}
+.achievement-icon {
+    display: grid;
+    place-items: center;
+    width: 46px; height: 46px;
+    background: var(--sticky-y);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    font-size: 1.2rem;
+    color: var(--accent);
+    flex: 0 0 auto;
+}
+.achievement.is-locked .achievement-icon {
+    background: var(--paper-line);
+    color: var(--ink-faint);
+}
+.achievement-body h3 { margin: 0 0 0.1rem; font-size: 1rem; }
+.achievement-body p  { margin: 0; color: var(--ink-soft); font-size: 0.82rem; }
+
+/* ---------- AVATAR EDITOR MODAL ---------- */
+.avatar-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(21, 25, 46, 0.55);
+    backdrop-filter: blur(2px);
+}
+.avatar-modal[hidden] { display: none; }
+.avatar-modal-card {
+    width: 100%;
+    max-width: 520px;
+    padding: 1.8rem;
+    background: var(--card);
+    border: 2.5px solid var(--ink);
+    border-radius: var(--radius);
+    box-shadow: 8px 8px 0 0 var(--ink);
+}
+.avatar-modal-card h2 { margin: 0 0 0.3rem; }
+.avatar-modal-card .hint { margin: 0 0 1rem; color: var(--ink-soft); font-size: 0.9rem; }
+.avatar-modal-current {
+    display: flex;
+    justify-content: center;
+    margin: 0.6rem 0 1rem;
+}
+.avatar-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
 }
